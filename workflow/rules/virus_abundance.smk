@@ -53,6 +53,7 @@ rule build_viruses_bowtie2db:
         """
 
 
+
 # Align reads to virus catalog using bowtie2
 rule align_reads_to_viruses:
     input:
