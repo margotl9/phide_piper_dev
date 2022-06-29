@@ -9,19 +9,19 @@ results: "/home/carsonjm/CarsonJM/phide_piper_dev/results/"
 #------------------------------------
 resources: "/labdata3/hoffdata/Shared/resources/"
 # Default: MGV viruses
-virus_db: "/labdata3/hoffdata/carsonjm/resources/virus_db/mgv_votu_representatives.fna"
-virus_db_meta: "/labdata3/hoffdata/carsonjm/resources/virus_db/mgv_contig_info.tsv"
+virus_db: "/labdata3/hoffdata/Shared/resources/virus_db/mgv_votu_representatives.fna"
+virus_db_meta: "/labdata3/hoffdata/Shared/resources/virus_db/mgv_contig_info.tsv"
 # if sample is a bulk metagenome (or you want to make your own CRISPR spacer database) then spacer_db and spacer_db_meta 
 # should be set to None, the MAGs to be used should be put in the bacteria_db and bacteria_db_meta fields, and the
 # include_spacer_identification flag should be set to True
 # Default: UHGG Spacers
-spacer_db: "/labdata3/hoffdata/carsonjm/resources/crispr_spacers/uhgg_spacers.fna"
-spacer_db_meta: "/labdata3/hoffdata/carsonjm/resources/crispr_spacers/uhgg_spacers_metadata.tsv"
+spacer_db: "/labdata3/hoffdata/Shared/resources/crispr_spacers/uhgg_spacers.fna"
+spacer_db_meta: "/labdata3/hoffdata/Shared/resources/crispr_spacers/uhgg_spacers_metadata.tsv"
 # if sample is a bulk metagenome, one of the workflows shown below should be run and the MAGs should be used as the input
 # starting at the virus identification module. Additionally, the MAGs should be input here as the bacteria db directory
 # Default: UHGG MAGs
-bacteria_db: "/labdata3/hoffdata/carsonjm/resources/bacteria_db/bacteria/bacteria_db_download_complete"
-bacteria_db_meta: "/labdata3/hoffdata/carsonjm/resources/bacteria_db/uhog_genome-all_metadata.tsv"
+bacteria_db: "/labdata3/hoffdata/Shared/resources/bacteria_db/bacteria/bacteria_db_download_complete"
+bacteria_db_meta: "/labdata3/hoffdata/Shared/resources/bacteria_db/uhog_genome-all_metadata.tsv"
 # Default: VPF
 function_db: ""
 function_db_meta: ""
