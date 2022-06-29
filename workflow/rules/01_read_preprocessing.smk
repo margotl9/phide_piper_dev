@@ -9,8 +9,8 @@ configfile: "config/config.yaml"
 
 
 samples_df = pd.read_csv("config/samples.tsv", sep="\t")
-group_assembly_sample = (
-    samples_df["group"] + "_" + samples_df["assembly"] + "_" + samples_df["sample"]
+assembly_sample = (
+    samples_df["assembly"] + "_" + samples_df["sample"]
 )
 
 # load results path
@@ -36,31 +36,27 @@ rule symlink_reads:
     input:
         R1=lambda wildcards: samples_df[
             (
-                samples_df["group"]
-                + "_"
                 + samples_df["assembly"]
                 + "_"
                 + samples_df["sample"]
                 + "_"
                 + samples_df["replicate"]
             )
-            == wildcards.group_assembly_sample_replicate
+            == wildcards.assembly_sample_replicate
         ]["R1"].iloc[0],
         R2=lambda wildcards: samples_df[
             (
-                samples_df["group"]
-                + "_"
                 + samples_df["assembly"]
                 + "_"
                 + samples_df["sample"]
                 + "_"
                 + samples_df["replicate"]
             )
-            == wildcards.group_assembly_sample_replicate
+            == wildcards.assembly_sample_replicate
         ]["R2"].iloc[0],
     output:
-        R1=results + "00_INPUT/{group_assembly_sample_replicate}_R1.fastq.gz",
-        R2=results + "00_INPUT/{group_assembly_sample_replicate}_R2.fastq.gz",
+        R1=results + "00_INPUT/{assembly_sample_replicate}_R1.fastq.gz",
+        R2=results + "00_INPUT/{assembly_sample_replicate}_R2.fastq.gz",
     shell:
         """
         # symlink input paths to renamed files
@@ -70,11 +66,11 @@ rule symlink_reads:
 
 
 # identify replicates
-samples_df["group_assembly_sample"] = (
-    samples_df["group"] + "_" + samples_df["assembly"] + "_" + samples_df["sample"]
+samples_df["assembly_sample"] = (
+    samples_df["assembly"] + "_" + samples_df["sample"]
 )
-sam_rep = samples_df[["group_assembly_sample", "replicate"]]
-sam_rep_dict = sam_rep.set_index("group_assembly_sample").to_dict()["replicate"]
+sam_rep = samples_df[["assembly_sample", "replicate"]]
+sam_rep_dict = sam_rep.set_index("assembly_sample").to_dict()["replicate"]
 
 
 # -----------------------------------------------------
@@ -84,18 +80,18 @@ sam_rep_dict = sam_rep.set_index("group_assembly_sample").to_dict()["replicate"]
 rule merge_replicates:
     input:
         R1=lambda wildcards: expand(
-            results + "00_INPUT/{{group_assembly_sample}}_{replicate}_R1.fastq.gz",
-            replicate=sam_rep_dict[wildcards.group_assembly_sample],
+            results + "00_INPUT/{{assembly_sample}}_{replicate}_R1.fastq.gz",
+            replicate=sam_rep_dict[wildcards.assembly_sample],
         ),
         R2=lambda wildcards: expand(
-            results + "00_INPUT/{{group_assembly_sample}}_{replicate}_R2.fastq.gz",
-            replicate=sam_rep_dict[wildcards.group_assembly_sample],
+            results + "00_INPUT/{{assembly_sample}}_{replicate}_R2.fastq.gz",
+            replicate=sam_rep_dict[wildcards.assembly_sample],
         ),
     output:
         R1=results
-        + "01_READ_PREPROCESSING/01_merge_replicates/{group_assembly_sample}_R1.fastq.gz",
+        + "01_READ_PREPROCESSING/01_merge_replicates/{assembly_sample}_R1.fastq.gz",
         R2=results
-        + "01_READ_PREPROCESSING/01_merge_replicates/{group_assembly_sample}_R2.fastq.gz",
+        + "01_READ_PREPROCESSING/01_merge_replicates/{assembly_sample}_R2.fastq.gz",
     shell:
         """
         # symlink input paths to renamed files
@@ -111,14 +107,14 @@ rule merge_replicates:
 rule gunzip_merged_reads:
     input:
         R1=results
-        + "01_READ_PREPROCESSING/01_merge_replicates/{group_assembly_sample}_R1.fastq.gz",
+        + "01_READ_PREPROCESSING/01_merge_replicates/{assembly_sample}_R1.fastq.gz",
         R2=results
-        + "01_READ_PREPROCESSING/01_merge_replicates/{group_assembly_sample}_R2.fastq.gz",
+        + "01_READ_PREPROCESSING/01_merge_replicates/{assembly_sample}_R2.fastq.gz",
     output:
         R1=results
-        + "01_READ_PREPROCESSING/02_gunzip_reads/{group_assembly_sample}_R1.fastq",
+        + "01_READ_PREPROCESSING/02_gunzip_reads/{assembly_sample}_R1.fastq",
         R2=results
-        + "01_READ_PREPROCESSING/02_gunzip_reads/{group_assembly_sample}_R2.fastq",
+        + "01_READ_PREPROCESSING/02_gunzip_reads/{assembly_sample}_R2.fastq",
     shell:
         """
         gunzip -c {input.R1} > {output.R1}
@@ -133,19 +129,19 @@ rule gunzip_merged_reads:
 rule clumpify:
     input:
         R1=results
-        + "01_READ_PREPROCESSING/02_gunzip_reads/{group_assembly_sample}_R1.fastq",
+        + "01_READ_PREPROCESSING/02_gunzip_reads/{assembly_sample}_R1.fastq",
         R2=results
-        + "01_READ_PREPROCESSING/02_gunzip_reads/{group_assembly_sample}_R2.fastq",
+        + "01_READ_PREPROCESSING/02_gunzip_reads/{assembly_sample}_R2.fastq",
     output:
         R1=results
-        + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}_R1.fastq",
+        + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}_R1.fastq",
         R2=results
-        + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}_R2.fastq",
-        log=results + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}.log",
+        + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}_R2.fastq",
+        log=results + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}.log",
     params:
         extra_args=config["read_preprocessing"]["clumpify_args"],
     log:
-        results + "00_LOGS/01_read_preprocessing_{group_assembly_sample}.clumpify.log",
+        results + "00_LOGS/01_read_preprocessing_{assembly_sample}.clumpify.log",
     conda:
         "../envs/clumpify.yml"
     shell:
@@ -195,26 +191,26 @@ rule kneaddata:
         resources + "kneaddata/hg37dec_v0.1.rev.1.bt2",
         resources + "kneaddata/hg37dec_v0.1.rev.2.bt2",
         R1=results
-        + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}_R1.fastq",
+        + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}_R1.fastq",
         R2=results
-        + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}_R2.fastq",
+        + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}_R2.fastq",
     output:
-        log=results + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}.log",
+        log=results + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}.log",
         R1=results
-        + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}_paired_1.fastq",
+        + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_paired_1.fastq",
         R2=results
-        + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}_paired_2.fastq",
+        + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_paired_2.fastq",
         R1S=results
-        + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}_unmatched_1.fastq",
+        + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_1.fastq",
         R2S=results
-        + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}_unmatched_2.fastq",
+        + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_2.fastq",
     params:
         output_dir=results + "01_READ_PREPROCESSING/04_kneaddata/",
         human_db=resources + "kneaddata/",
         extra_args=config["read_preprocessing"]["kneaddata_args"],
-        prefix="{group_assembly_sample}",
+        prefix="{assembly_sample}",
     log:
-        results + "00_LOGS/01_read_preprocessing_{group_assembly_sample}.kneaddata.log",
+        results + "00_LOGS/01_read_preprocessing_{assembly_sample}.kneaddata.log",
     conda:
         "../envs/kneaddata.yml"
     threads: config["read_preprocessing"]["kneaddata_threads"]
@@ -239,8 +235,8 @@ rule kneaddata:
 rule clumpify_read_counts:
     input:
         expand(
-            results + "01_READ_PREPROCESSING/03_clumpify/{group_assembly_sample}.log",
-            group_assembly_sample=group_assembly_sample,
+            results + "01_READ_PREPROCESSING/03_clumpify/{assembly_sample}.log",
+            assembly_sample=assembly_sample,
         ),
     output:
         results + "01_READ_PREPROCESSING/03_clumpify/combined_read_counts.tsv",
@@ -254,8 +250,8 @@ rule clumpify_read_counts:
 rule kneaddata_read_counts:
     input:
         expand(
-            results + "01_READ_PREPROCESSING/04_kneaddata/{group_assembly_sample}.log",
-            group_assembly_sample=group_assembly_sample,
+            results + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}.log",
+            assembly_sample=assembly_sample,
         ),
     output:
         results + "01_READ_PREPROCESSING/04_kneaddata/combined_read_counts.tsv",

@@ -90,7 +90,9 @@ rule align_reads_to_viruses:
         rm {params.sam}
         """
 
-
+# -----------------------------------------------------
+# 02 Metapop
+# -----------------------------------------------------
 rule prepare_read_counts_file:
     input:
         results + "01_READ_PREPROCESSING/read_preprocessing_report.csv",

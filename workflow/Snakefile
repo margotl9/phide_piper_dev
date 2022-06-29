@@ -40,6 +40,7 @@ include: "rules/07_virus_host.smk"
 # Pipeline outputs
 # -------------------------------------
 def get_final_output(wildcards):
+        
     final_output = []
 
     final_output.append(results + "01_READ_PREPROCESSING/read_preprocessing_figure.png")
