@@ -1,0 +1,15 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python=3
+  - samtools
+  - mash
+  - mummer
+  - mmseqs2
+  - prodigal
+  - bowtie2
+  - bwa
+  - git

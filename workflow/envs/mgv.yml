@@ -1,0 +1,11 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - prodigal=2.6.3
+  - hmmer=3.3.2
+  - r-virfinder=1.1
+  - biopython=1.79
+  - blast=2.12.0

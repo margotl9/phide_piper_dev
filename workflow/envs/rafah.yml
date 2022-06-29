@@ -1,0 +1,14 @@
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+
+dependencies:
+  - prodigal=2.6
+  - hmmer=3.1
+  - perl-bioperl
+  - r-base=3.6.3
+  - r-ranger=0.12.1
+  - mmseqs2=12.113e3
+  - muscle=3.8.1551
