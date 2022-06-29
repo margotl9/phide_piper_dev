@@ -1,2 +1,2 @@
 sample	replicate	assembly	group	R1	R2	contig
-enriched1	rep1	assembly1	group1	/home/carsonjm/Data/virome_test_data/enriched_ERR2155200_R1.fastq.gz	/home/carsonjm/Data/virome_test_data/enriched_ERR2155200_R2.fastq.gz	
+enriched1	rep1	assembly1	group1	/labdata3/hoffdata/Shared/resources/virome_test_data/enriched_ERR2155200_R1.fastq.gz	/labdata3/hoffdata/Shared/resources/virome_test_data/enriched_ERR2155200_R2.fastq.gz	
