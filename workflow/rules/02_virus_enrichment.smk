@@ -9,7 +9,7 @@ configfile: "config/config.yaml"
 
 
 samples_df = pd.read_csv("config/samples.tsv", sep="\t")
-group_assembly_sample = (
+assembly_sample = (
     samples_df["group"] + "_" + samples_df["assembly"] + "_" + samples_df["sample"]
 )
 
