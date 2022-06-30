@@ -21,13 +21,14 @@ report: "report/workflow.rst"
 # -------------------------------------
 # Modularization: rules to include
 # -------------------------------------
-include: "rules/01_read_preprocessing.smk"
-include: "rules/02_virus_enrichment.smk"
-include: "rules/03_read_assembly.smk"
-include: "rules/04_virus_identification.smk"
-include: "rules/05_virus_clustering.smk"
-include: "rules/06_virus_quality.smk"
-include: "rules/07_virus_host.smk"
+# include: "rules/01_read_preprocessing.smk"
+# include: "rules/02_virus_enrichment.smk"
+# include: "rules/03_read_assembly.smk"
+# include: "rules/04_virus_identification.smk"
+# include: "rules/05_virus_clustering.smk"
+# include: "rules/06_virus_quality.smk"
+# include: "rules/07_virus_host.smk"
+include: "rules/read_abundances.smk"
 
 
 # include: "rules/08_virus_taxonomy.smk"
@@ -43,29 +44,32 @@ def get_final_output(wildcards):
         
     final_output = []
 
-    final_output.append(results + "01_READ_PREPROCESSING/read_preprocessing_figure.png")
+    # final_output.append(results + "01_READ_PREPROCESSING/read_preprocessing_figure.png")
 
-    final_output.append(results + "02_VIRUS_ENRICHMENT/virus_enrichment_figure.png")
+    # final_output.append(results + "02_VIRUS_ENRICHMENT/virus_enrichment_figure.png")
 
-    final_output.append(results + "03_READ_ASSEMBLY/read_assembly_figure.png")
-
-    final_output.append(
-        results + "04_VIRUS_IDENTIFICATION/virus_identification_figure.png"
-    )
-
-    final_output.append(results + "05_VIRUS_CLUSTERING/virus_clustering_figure.png")
-
-    final_output.append(results + "06_VIRUS_QUALITY/virus_quality_figure.png")
+    # final_output.append(results + "03_READ_ASSEMBLY/read_assembly_figure.png")
 
     # final_output.append(
-    #     results + "07_VIRUS_ABUNDANCE/test",
+    #     results + "04_VIRUS_IDENTIFICATION/virus_identification_figure.png"
     # )
 
-    final_output.append(results + "07_VIRUS_HOST/01_crispr_spacers/host_taxonomy.csv")
+    # final_output.append(results + "05_VIRUS_CLUSTERING/virus_clustering_figure.png")
 
-    final_output.append(results + "07_VIRUS_HOST/02_phist/phist_host_taxonomy.csv")
+    # final_output.append(results + "06_VIRUS_QUALITY/virus_quality_figure.png")
 
-    final_output.append(results + "07_VIRUS_HOST/03_rafah/Seq_Info_Prediction.tsv")
+    # # final_output.append(
+    # #     results + "07_VIRUS_ABUNDANCE/test",
+    # # )
+
+    # final_output.append(results + "07_VIRUS_HOST/01_crispr_spacers/host_taxonomy.csv")
+
+    # final_output.append(results + "07_VIRUS_HOST/02_phist/phist_host_taxonomy.csv")
+
+    # final_output.append(results + "07_VIRUS_HOST/03_rafah/Seq_Info_Prediction.tsv")
+   
+   #desired output files from read_abundances
+    final_output.append(results + "")
 
     return final_output
 
