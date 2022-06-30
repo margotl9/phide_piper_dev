@@ -4,4 +4,4 @@ channels:
   - defaults
 
 dependencies:
-  - checkv
+  - checkv=0.8.1
