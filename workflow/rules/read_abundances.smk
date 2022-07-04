@@ -11,9 +11,7 @@ configfile: "config/config.yaml"
 
 samples_df = pd.read_csv("config/samples.tsv", sep="\t")
 
-assembly_sample = (
-    samples_df["assembly"] + "_" + samples_df["sample"]
-)
+# assembly_sample = (samples_df["assembly"] + "_" + samples_df["sample"])
 
 
 # load results path
@@ -31,6 +29,29 @@ report: "report/workflow.rst"
 # -----------------------------------------------------
 # Virus abundance rules
 # -----------------------------------------------------
+# symlink input paths to new paths (abundance and sample)
+rule symlink_reads:
+    input:
+        R1=lambda wildcards: samples_df[
+            (samples_df["assembly"] + "_" + samples_df["sample"])
+            == wildcards.assembly_sample
+            ].iloc[0]["R1"],
+        R2=lambda wildcards: samples_df[
+            (samples_df["assembly"] + "_" + samples_df["sample"])
+            == wildcards.assembly_sample
+            ].iloc[0]["R2"],
+    output:
+        R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
+        R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
+    shell:
+        """
+        # symlink input paths to renamed files
+        ln -s {input.R1} {output.R1}
+        ln -s {input.R2} {output.R2}
+        """
+
+
+
 # -----------------------------------------------------
 # 01 Align reads to virus catalog using Bowtie2
 # -----------------------------------------------------
@@ -39,11 +60,11 @@ rule build_viruses_bowtie2db:
     input:
         config["virus_db"]
     output:
-        results + "READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalog.1.bt2",
+        results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog.1.bt2",
     params:
-        db=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalog",
+        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog",
     conda:
-        "workflow/envs/kneaddata.yml"
+        "../envs/kneaddata.yml"
     threads: config["virus_abundance"]["metapop_threads"]
     shell:
         """
@@ -56,25 +77,23 @@ rule build_viruses_bowtie2db:
 # Align reads to virus catalog using bowtie2
 rule bowtie2_align_reads_to_viruses:
     input:
-        R1=results
-        + "00_INPUT/{assembly_sample}_paired_1.fastq",
-        R2=results
-        + "00_INPUT/{assembly_sample}_paired_2.fastq",
+        R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
+        R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
         # R1S=results
         # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_1.fastq",
         # R2S=results
         # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_2.fastq",
-        db=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalog.1.bt2",
+        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog.1.bt2",
     output:
         results
         + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam",
     params:
-        db=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalog",
-        sam=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/{assembly_sample}.sam",
+        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog",
+        sam=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/{assembly_sample}.sam",
     log:
-        results +  "READ_ABUNDANCE/01_bowtie2_align_viruses/{assembly_sample}_log
+        results+"READ_ABUNDANCE/01_bowtie2_align_viruses/logs/{assembly_sample}_log",
     conda:
-        "workflow/envs/kneaddata.yml"
+        "../envs/kneaddata.yml"
     threads: config["virus_abundance"]["metapop_threads"]
     ##uncomment below and add to shell when using R1S and R2S 
     # -U {input.R1S},{input.R2S} \
@@ -97,32 +116,35 @@ rule bowtie2_align_reads_to_viruses:
 
 
 
-# -----------------------------------------------------
-# 01 Align reads to virus catalog using Kraken2
-# -----------------------------------------------------
+# ----------------------------------------------------------
+# 02 Align reads to virus database using Kraken2 and Bracken
+# ----------------------------------------------------------
 rule customize_virus_headers:
     input:
-        genomes=config["virus_db"]
-        metadata=config["virus_db_meta"]
+        genomes=config["virus_db"],
+        metadata=config["virus_db_meta"],
     output:
-        results + "READ_ABUNDANCE/01_kraken2_align_viruses/kraken_formatted_mgv.fasta",
+        results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/kraken_formatted_mgv.fasta",
     conda:
-        "workflow/envs/jupyter.yml"
+        "../envs/jupyter.yml"
     notebook:
-        "workflow/notebooks/customize_virus_headers.py.ipynb"
+        "../notebooks/customize_virus_headers.py.ipynb"
 
 
 
 # Align reads to virus catalog using kraken2
 rule build_viruses_kraken2db:
     input:
-        results + "READ_ABUNDANCE/01_kraken2_align_viruses/kraken_formatted_mgv.fasta",
+        results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/kraken_formatted_mgv.fasta",
     output:
-        results + "READ_ABUNDANCE/01_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+        results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
     params:
-        db=results + "READ_ABUNDANCE/01_kraken2_align_viruses/mgv_kraken2db/"
+        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/"
     conda:
-        "workflow/envs/kraken2.yml"
+        "../envs/kraken2.yml"
     shell:
         """
         kraken2-build --download-taxonomy --db {params.db}
@@ -133,18 +155,84 @@ rule build_viruses_kraken2db:
 
 
 # Align reads to virus catalog using kraken2
-rule kracken2_align_reads_to_viruses:
+rule kraken2_align_reads_to_viruses:
+    input:
+        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+        R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
+        R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
+    output:
+        classification=results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
+        report=results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+    params:
+        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+    conda:
+        "../envs/kraken2.yml"
+    shell:
+        """
+        kraken2 --paired {input.R1} {input.R2} \
+        --db {params.db} \
+        --report {output.report} > {output.classification}
+        """
+
+
+
+# Build custom bracken database and align reads
+rule bracken_build:
+    input:
+        results
+        +"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+    output:
+        results
+        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/database150mers.kmer_distrib",
+    params:
+        db=results
+        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+    threads: config["virus_abundance"]["metapop_threads"]
+    conda:
+        "../envs/bracken.yml"
+    shell:
+        """
+        bracken-build -d {params.db} -t {threads} -k 35 -l 150
+        """
+
+
+
+# Determine which viruses are present and their abundances
+rule bracken:
+    input:
+        db=results
+        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/database150mers.kmer_distrib",
+        report=results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+    output:
+        abundance=results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
+    params:
+        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+        level=config["virus_abundance"]["taxon_level"]
+    threads: config["virus_abundance"]["metapop_threads"]
+    conda:
+        "../envs/bracken.yml"
+    shell:
+        """
+        bracken -d {params.db} \
+        -i {input.report} \
+        -o {output.abundance} \
+        -r 150 -l {params.level}  -t {threads}
+        """
+
 
 
 
 # -----------------------------------------------------
-# 03 Metapop
+# 04 Metapop
 # -----------------------------------------------------
+#TODO: dry run and run
 rule prepare_read_counts_file:
     input:
         results + "01_READ_PREPROCESSING/read_preprocessing_report.csv",
     output:
-        results + "07_VIRUS_ABUNDANCE/02_virus_abundance/read_counts.tsv",
+        results + "READ_ABUNDANCE/04_metapop_virus_abundance/read_counts.tsv",
     conda:
         "../envs/jupyter.yml"
     notebook:
@@ -156,18 +244,18 @@ rule metapop:
     input:
         bam=expand(
             results
-            + "07_VIRUS_ABUNDANCE/01_align_viruses/bam_files/{assembly_sample}.bam",
+            +"READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam",
             assembly_sample=assembly_sample,
         ),
-        read_counts=results + "07_VIRUS_ABUNDANCE/02_virus_abundance/read_counts.tsv",
+        read_counts=results + "READ_ABUNDANCE/04_metapop_virus_abundance/read_counts.tsv",
         viruses=results
-        + "06_VIRUS_QUALITY/02_quality_filter/quality_filtered_viruses.fna",
+        +"06_VIRUS_QUALITY/02_quality_filter/quality_filtered_viruses.fna",
     output:
-        results + "07_VIRUS_ABUNDANCE/test",
+        results+"READ_ABUNDANCE/test",
     params:
-        bam_dir=results + "07_VIRUS_ABUNDANCE/01_align_viruses/bam_files/",
+        bam_dir=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/",
         viruses_dir=results + "06_VIRUS_QUALITY/02_quality_filter/",
-        out_dir=results + "07_VIRUS_ABUNDANCE/02_virus_abundance/",
+        out_dir=results + "READ_ABUNDANCE/04_metapop_virus_abundance/",
         min_breadth=config["virus_abundance"]["min_breadth"],
         min_length=config["virus_abundance"]["min_length"],
         min_depth=config["virus_abundance"]["min_depth"],
@@ -189,3 +277,8 @@ rule metapop:
         --no_micro
         """
 
+
+
+# -----------------------------------------------------
+# 05 InStrain
+# -----------------------------------------------------

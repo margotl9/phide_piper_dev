@@ -9,6 +9,7 @@ configfile: "config/config.yaml"
 
 
 samples_df = pd.read_csv("config/samples.tsv", sep="\t")
+assembly_sample = (samples_df["assembly"] + "_" + samples_df["sample"])
 
 # load results path
 results = config["results"]
@@ -68,8 +69,29 @@ def get_final_output(wildcards):
 
     # final_output.append(results + "07_VIRUS_HOST/03_rafah/Seq_Info_Prediction.tsv")
    
-   #desired output files from read_abundances
-    final_output.append(results + "")
+   #---------------------------------------------
+   #desired output files from read_abundances.smk
+   #---------------------------------------------
+    # final_output.append(results+"READ_ABUNDANCE/test")
+    bams=expand(results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam", 
+    assembly_sample = assembly_sample)
+    for b in bams:
+        final_output.append(b)
+
+    krakens=expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
+    assembly_sample = assembly_sample)
+    for k in krakens:
+        final_output.append(k)
+
+    reports=expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+    assembly_sample = assembly_sample)
+    for r in reports:
+        final_output.append(r)
+
+    brackens=expand(results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
+    assembly_sample=assembly_sample)
+    for b in brackens:
+        final_output.append(b)
 
     return final_output
 
@@ -77,3 +99,16 @@ def get_final_output(wildcards):
 rule all:
     input:
         get_final_output,
+        # expand(results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam", 
+        # assembly_sample = assembly_sample),
+
+
+        # expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
+        # assembly_sample = assembly_sample),
+        # expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+        # assembly_sample = assembly_sample),
+
+        # expand(results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
+        # assembly_sample = assembly_sample)
+
+

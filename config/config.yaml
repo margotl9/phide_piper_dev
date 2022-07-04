@@ -164,4 +164,5 @@ virus_abundance:
   metapop_threads: 10
   run_kraken: True
   kraken_threads: 10
+  taxon_level: "F"
 

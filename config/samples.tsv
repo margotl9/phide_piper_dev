@@ -1,2 +1,2 @@
 sample	replicate	assembly	R1	R2	contig
-enriched1	rep1	assembly1	"/Users/margotlavitt/resources/input/kraken_test_reads/enriched_ERR2155200_R1.fastq.gz"	"/Users/margotlavitt/resources/input/kraken_test_reads/enriched_ERR2155200_R2.fastq.gz"	
+enriched1	rep1	assembly1	/Users/margotlavitt/Sum22/phide_piper_dev/results/00_INPUT/enriched_ERR2155200_R1.fastq.gz	/Users/margotlavitt/Sum22/phide_piper_dev/results/00_INPUT/enriched_ERR2155200_R2.fastq.gz	
