@@ -60,9 +60,9 @@ rule build_viruses_bowtie2db:
     input:
         config["virus_db"]
     output:
-        results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog.1.bt2",
+        results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog.1.bt2",
     params:
-        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog",
+        db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog",
     conda:
         "../envs/kneaddata.yml"
     threads: config["virus_abundance"]["metapop_threads"]
@@ -83,15 +83,15 @@ rule bowtie2_align_reads_to_viruses:
         # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_1.fastq",
         # R2S=results
         # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_2.fastq",
-        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog.1.bt2",
+        db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog.1.bt2",
     output:
         results
-        + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam",
+        + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam",
     params:
-        db=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/virus_catalogs/virus_catalog",
-        sam=results+"READ_ABUNDANCE/01_bowtie2_align_viruses/{assembly_sample}.sam",
+        db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog",
+        sam=results+"READ_ABUNDANCE/01_bowtie2/{assembly_sample}.sam",
     log:
-        results+"READ_ABUNDANCE/01_bowtie2_align_viruses/logs/{assembly_sample}_log",
+        results+"READ_ABUNDANCE/01_bowtie2/logs/{assembly_sample}_log",
     conda:
         "../envs/kneaddata.yml"
     threads: config["virus_abundance"]["metapop_threads"]
@@ -125,7 +125,7 @@ rule customize_virus_headers:
         metadata=config["virus_db_meta"],
     output:
         results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/kraken_formatted_mgv.fasta",
+        +"READ_ABUNDANCE/02_kraken2_bracken/kraken_formatted_mgv.fasta",
     conda:
         "../envs/jupyter.yml"
     notebook:
@@ -137,12 +137,12 @@ rule customize_virus_headers:
 rule build_viruses_kraken2db:
     input:
         results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/kraken_formatted_mgv.fasta",
+        +"READ_ABUNDANCE/02_kraken2_bracken/kraken_formatted_mgv.fasta",
     output:
         results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+        +"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
     params:
-        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/"
+        db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/"
     conda:
         "../envs/kraken2.yml"
     shell:
@@ -157,16 +157,16 @@ rule build_viruses_kraken2db:
 # Align reads to virus catalog using kraken2
 rule kraken2_align_reads_to_viruses:
     input:
-        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+        db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
         R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
         R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
     output:
         classification=results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
+        +"READ_ABUNDANCE/02_kraken2_bracken/kraken/{assembly_sample}_kraken2.kraken",
         report=results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+        +"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2.kreport",
     params:
-        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+        db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
     conda:
         "../envs/kraken2.yml"
     shell:
@@ -182,13 +182,13 @@ rule kraken2_align_reads_to_viruses:
 rule bracken_build:
     input:
         results
-        +"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/hash.k2d",
+        +"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
     output:
         results
-        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/database150mers.kmer_distrib",
+        + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/database150mers.kmer_distrib",
     params:
         db=results
-        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+        + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
     threads: config["virus_abundance"]["metapop_threads"]
     conda:
         "../envs/bracken.yml"
@@ -203,12 +203,13 @@ rule bracken_build:
 rule bracken:
     input:
         db=results
-        + "READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/database150mers.kmer_distrib",
-        report=results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+        + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/database150mers.kmer_distrib",
+        report=results+"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2.kreport",
     output:
-        abundance=results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
+        # report=results+"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2_bracken_families.kreport",
+        abundance=results + "READ_ABUNDANCE/02_kraken2_bracken/bracken/{assembly_sample}_bracken_abundances.bracken",
     params:
-        db=results+"READ_ABUNDANCE/02_kraken2_align_viruses/mgv_kraken2db/",
+        db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
         level=config["virus_abundance"]["taxon_level"]
     threads: config["virus_abundance"]["metapop_threads"]
     conda:
@@ -218,7 +219,7 @@ rule bracken:
         bracken -d {params.db} \
         -i {input.report} \
         -o {output.abundance} \
-        -r 150 -l {params.level}  -t {threads}
+        -r 150 -l {params.level}  -t {threads} 
         """
 
 
@@ -244,7 +245,7 @@ rule metapop:
     input:
         bam=expand(
             results
-            +"READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam",
+            +"READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam",
             assembly_sample=assembly_sample,
         ),
         read_counts=results + "READ_ABUNDANCE/04_metapop_virus_abundance/read_counts.tsv",
@@ -253,7 +254,7 @@ rule metapop:
     output:
         results+"READ_ABUNDANCE/test",
     params:
-        bam_dir=results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/",
+        bam_dir=results + "READ_ABUNDANCE/01_bowtie2/bam_files/",
         viruses_dir=results + "06_VIRUS_QUALITY/02_quality_filter/",
         out_dir=results + "READ_ABUNDANCE/04_metapop_virus_abundance/",
         min_breadth=config["virus_abundance"]["min_breadth"],

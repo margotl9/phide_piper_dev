@@ -73,22 +73,22 @@ def get_final_output(wildcards):
    #desired output files from read_abundances.smk
    #---------------------------------------------
     # final_output.append(results+"READ_ABUNDANCE/test")
-    bams=expand(results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam", 
+    bams=expand(results + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam", 
     assembly_sample = assembly_sample)
     for b in bams:
         final_output.append(b)
 
-    krakens=expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
+    krakens=expand(results+"READ_ABUNDANCE/02_kraken2_bracken/kraken/{assembly_sample}_kraken2.kraken",
     assembly_sample = assembly_sample)
     for k in krakens:
         final_output.append(k)
 
-    reports=expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
+    reports=expand(results+"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2.kreport",
     assembly_sample = assembly_sample)
     for r in reports:
         final_output.append(r)
 
-    brackens=expand(results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
+    brackens=expand(results + "READ_ABUNDANCE/02_kraken2_bracken/bracken/{assembly_sample}_bracken_abundances.bracken",
     assembly_sample=assembly_sample)
     for b in brackens:
         final_output.append(b)
@@ -99,7 +99,7 @@ def get_final_output(wildcards):
 rule all:
     input:
         get_final_output,
-        # expand(results + "READ_ABUNDANCE/01_bowtie2_align_viruses/bam_files/{assembly_sample}.bam", 
+        # expand(results + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam", 
         # assembly_sample = assembly_sample),
 
 
