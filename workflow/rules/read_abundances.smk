@@ -63,6 +63,7 @@ rule build_viruses_bowtie2db:
         results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog.1.bt2",
     params:
         db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog", 
+		extra_args=config["read_abundances"]["extra_args"]
     conda:
         "../envs/kneaddata.yml"
     threads: config["virus_abundance"]["metapop_threads"]
@@ -70,6 +71,7 @@ rule build_viruses_bowtie2db:
         """
         # make a bowtie2 db from virusdb
         bowtie2-build {input} {params.db} --threads {threads}
+        {params.extra_args}
         """
 
 
@@ -90,6 +92,8 @@ rule bowtie2_align_reads_to_viruses:
     params:
         db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog",
         sam=results+"READ_ABUNDANCE/01_bowtie2/{assembly_sample}.sam",
+        extra_args=config["read_abundances"]["extra_args"]
+
     log:
         results+"READ_ABUNDANCE/01_bowtie2/logs/{assembly_sample}_log",
     conda:
@@ -106,7 +110,8 @@ rule bowtie2_align_reads_to_viruses:
         -1 {input.R1} \
         -2 {input.R2} \
         -S {params.sam} \
-        > {log} 2>&1
+        > {log} 2>&1 \
+        {params.extra_args}
  
         # convert sam to bam
         samtools view -S -b {params.sam} > {output} 
@@ -139,10 +144,12 @@ rule build_viruses_kraken2db:
     output:
         results
         +"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
-        #config["read_abundance"]["kraken_db"] + "hash.k2d",
+        #config["read_abundances"]["kraken_db"] + "hash.k2d",
     params:
         db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/"
-        #db=config["read_abundance"]["kraken_db"]
+        #db=config["read_abundances"]["kraken_db"]
+        extra_args=config["read_abundances"]["extra_args"]
+
     conda:
         "../envs/kraken2.yml"
     shell:
@@ -150,6 +157,7 @@ rule build_viruses_kraken2db:
         kraken2-build --download-taxonomy --db {params.db}
         kraken2-build --add-to-library {input} --db {params.db}
         kraken2-build --build --db {params.db}
+        {params.extra_args}
         """
 
 
@@ -158,7 +166,7 @@ rule build_viruses_kraken2db:
 rule kraken2_align_reads_to_viruses:
     input:
         db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
-        #db=config["read_abundance"]["kraken_db"] + "hash.k2d",
+        #db=config["read_abundances"]["kraken_db"] + "hash.k2d",
         R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
         R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
     output:
@@ -168,14 +176,17 @@ rule kraken2_align_reads_to_viruses:
         +"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2.kreport",
     params:
         db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
-        #db=config["read_abundance"]["kraken_db"]
+        #db=config["read_abundances"]["kraken_db"],
+        extra_args=config["read_abundances"]["extra_args"]
+
     conda:
         "../envs/kraken2.yml"
     shell:
         """
         kraken2 --paired {input.R1} {input.R2} \
         --db {params.db} \
-        --report {output.report} > {output.classification}
+        --report {output.report} > {output.classification} \
+        {params.extra_args}
         """
 
 
@@ -185,21 +196,24 @@ rule bracken_build:
     input:
         results
         +"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/hash.k2d",
-        #config["read_abundance"]["kraken_db"] + "hash.k2d",
+        #config["read_abundances"]["kraken_db"] + "hash.k2d",
     output:
         results
         + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/database150mers.kmer_distrib",
-        #config["read_abundance"]["kraken_db"] + "database150mers.kmer_distrib",
+        #config["read_abundances"]["kraken_db"] + "database150mers.kmer_distrib",
     params:
         db=results
         + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
-        #db=config["read_abundance"]["kraken_db"]
+        #db=config["read_abundances"]["kraken_db"],
+        extra_args=config["read_abundances"]["extra_args"]
+
     threads: config["virus_abundance"]["metapop_threads"]
     conda:
         "../envs/bracken.yml"
     shell:
         """
-        bracken-build -d {params.db} -t {threads} -k 35 -l 150
+        bracken-build -d {params.db} -t {threads} -k 35 -l 150 \
+        {params.extra_args}
         """
 
 
@@ -209,15 +223,17 @@ rule bracken:
     input:
         db=results
         + "READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/database150mers.kmer_distrib",
-        #db=config["read_abundance"]["kraken_db"] + "database150mers.kmer_distrib",
+        #db=config["read_abundances"]["kraken_db"] + "database150mers.kmer_distrib",
         report=results+"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2.kreport",
     output:
         # report=results+"READ_ABUNDANCE/02_kraken2_bracken/reports/{assembly_sample}_kraken2_bracken_families.kreport",
         abundance=results + "READ_ABUNDANCE/02_kraken2_bracken/bracken/{assembly_sample}_bracken_abundances.bracken",
     params:
         db=results+"READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/",
-        #db=config["read_abundance"]["kraken_db"],
+        #db=config["read_abundances"]["kraken_db"],
         level=config["virus_abundance"]["taxon_level"]
+        extra_args=config["read_abundances"]["extra_args"]
+
     threads: config["virus_abundance"]["metapop_threads"]
     conda:
         "../envs/bracken.yml"
@@ -226,7 +242,10 @@ rule bracken:
         bracken -d {params.db} \
         -i {input.report} \
         -o {output.abundance} \
-        -r 150 -l {params.level}  -t {threads} 
+        -r 150 \
+        -l {params.level} \
+        -t {threads} \
+        {params.extra_args}
         """
 
 
@@ -283,11 +302,13 @@ rule metapop:
         results+"READ_ABUNDANCE/test",
     params:
         bam_dir=results + "READ_ABUNDANCE/01_bowtie2/bam_files/",
-        viruses_dir=resources + "mgv_db/", #config["read_abundance"]["virus_dir"],
+        viruses_dir=resources + "mgv_db/", #config["read_abundances"]["virus_dir"],
         out_dir=results + "READ_ABUNDANCE/03_metapop/",
         min_breadth=config["virus_abundance"]["min_breadth"],
         min_length=config["virus_abundance"]["min_length"],
         min_depth=config["virus_abundance"]["min_depth"],
+        extra_args=config["read_abundances"]["extra_args"],
+
     conda:
         "../envs/metapop.yml"
     threads: config["virus_clustering"]["blast_threads"]
@@ -304,7 +325,8 @@ rule metapop:
         --minimum_bases_for_detection {params.min_length} \
         --min_dep {params.min_depth} \
         --no_micro \
-        --threads {threads}
+        --threads {threads} \
+        {params.extra_args}
         """
 
 
@@ -317,7 +339,7 @@ rule contig_from_virus_db:
         config["virus_db"]
     output:
         resources+"mgv_db/contig_mgv.fna"
-        #config["read_abundance"]["virus_dir"] + "contig_mgv.fna"
+        #config["read_abundances"]["virus_dir"] + "contig_mgv.fna"
     conda:
         "../envs/instrain.yml"
     shell:
@@ -341,7 +363,7 @@ rule sort_bam:
 rule inStrain_profile:
     input:
         # fna=resources+"mgv_db/contig_mgv.fna",
-        #config["read_abundance"]["virus_dir"] + "contig_mgv.fna"
+        #config["read_abundances"]["virus_dir"] + "contig_mgv.fna"
         fasta=config["virus_db"],
         bam=results+"READ_ABUNDANCE/01_bowtie2/sorted_bam_files/{assembly_sample}_sorted.bam",
     output:
@@ -349,6 +371,8 @@ rule inStrain_profile:
     params:
         out_dir=results+"READ_ABUNDANCE/04_instrain_profile/{assembly_sample}_profile.IS",
         min_breadth=config["virus_abundance"]["min_breadth"],
+        extra_args=config["read_abundances"]["extra_args"]
+
     conda:
         "../envs/instrain.yml"
     # -g {input.fna} \
@@ -361,7 +385,7 @@ rule inStrain_profile:
         --skip_mm_profiling \
         --skip_genome_wide \
         --min_cov {params.min_breadth} \
-        -d
+        {params.extra_args}
         """
 
 
@@ -378,6 +402,8 @@ rule inStrain_compare:
         bam=expand(results+"READ_ABUNDANCE/01_bowtie2/sorted_bam_files/{assembly_sample}_sorted.bam", assembly_sample=assembly_sample),
         profile=expand(results+"READ_ABUNDANCE/04_instrain_profile/{assembly_sample}_profile.IS", assembly_sample=assembly_sample),
         out_dir=results+"READ_ABUNDANCE/05_instrain_compare/compare.IS",
+        extra_args=config["read_abundances"]["extra_args"]
+
     conda:
         "../envs/instrain.yml"
     shell:
@@ -385,7 +411,8 @@ rule inStrain_compare:
         inStrain compare \
         -i {params.profile} \
         -o {params.out_dir} \
-        -bams {params.bam}
+        -bams {params.bam} \
+        {params.extra_args}
         """
 
 

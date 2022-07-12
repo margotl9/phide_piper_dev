@@ -1,3 +1,5 @@
 *.snakemake/*
 dag.pdf
 *results*
+spacer_predictions.smk
+crispr_identify.yml
