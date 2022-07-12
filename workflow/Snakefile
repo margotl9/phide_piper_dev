@@ -73,11 +73,11 @@ def get_final_output(wildcards):
    #desired output files from read_abundances.smk
    #---------------------------------------------
     # final_output.append(results+"READ_ABUNDANCE/test")
-    bams=expand(results + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam", 
-    assembly_sample = assembly_sample)
-    for b in bams:
-        final_output.append(b)
-
+    # bams=expand(results + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam", 
+    # assembly_sample = assembly_sample)
+    # for b in bams:
+    #     final_output.append(b)
+    
     krakens=expand(results+"READ_ABUNDANCE/02_kraken2_bracken/kraken/{assembly_sample}_kraken2.kraken",
     assembly_sample = assembly_sample)
     for k in krakens:
@@ -92,6 +92,11 @@ def get_final_output(wildcards):
     assembly_sample=assembly_sample)
     for b in brackens:
         final_output.append(b)
+
+    final_output.append(results+"READ_ABUNDANCE/test")
+
+    # final_output.append(results+"READ_ABUNDANCE/04_instrain/profile.IS")
+
 
     return final_output
 

@@ -10,8 +10,8 @@ configfile: "config/config.yaml"
 
 
 samples_df = pd.read_csv("config/samples.tsv", sep="\t")
-
-# assembly_sample = (samples_df["assembly"] + "_" + samples_df["sample"])
+assembly = samples_df["assembly"]
+assembly_sample = (samples_df["assembly"] + "_" + samples_df["sample"])
 
 
 # load results path
@@ -80,9 +80,9 @@ rule bowtie2_align_reads_to_viruses:
         R1=results+"00_INPUT/{assembly_sample}_paired_1.fastq.gz",
         R2=results+"00_INPUT/{assembly_sample}_paired_2.fastq.gz",
         # R1S=results
-        # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_1.fastq",
+        # + "01_READ_PREPROCESSING/03_kneaddata/{assembly_sample}_unmatched_1.fastq",
         # R2S=results
-        # + "01_READ_PREPROCESSING/04_kneaddata/{assembly_sample}_unmatched_2.fastq",
+        # + "01_READ_PREPROCESSING/03_kneaddata/{assembly_sample}_unmatched_2.fastq",
         db=results+"READ_ABUNDANCE/01_bowtie2/virus_catalogs/virus_catalog.1.bt2",
     output:
         results
@@ -226,37 +226,64 @@ rule bracken:
 
 
 # -----------------------------------------------------
-# 04 Metapop
+# 03 Metapop
 # -----------------------------------------------------
-#TODO: dry run and run
-rule prepare_read_counts_file:
-    input:
-        results + "01_READ_PREPROCESSING/read_preprocessing_report.csv",
-    output:
-        results + "READ_ABUNDANCE/04_metapop_virus_abundance/read_counts.tsv",
-    conda:
-        "../envs/jupyter.yml"
-    notebook:
-        "../notebooks/07_read_counts.py.ipynb"
+# rule prepare_read_counts_file:
+#     input:
+#         results + "01_READ_PREPROCESSING/read_preprocessing_report.csv",
+#     output:
+#         results + "READ_ABUNDANCE/03_metapop/read_counts.tsv",
+#     conda:
+#         "../envs/jupyter.yml"
+#     notebook:
+#         "../notebooks/07_read_counts.py.ipynb"
 
+rule read_counts_from_bam:
+    input:
+        results
+        + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam",
+    output:
+        results+"READ_ABUNDANCE/03_metapop/{assembly_sample}_read_counts.tsv",
+    conda:
+        "../envs/kneaddata.yml"
+    shell: 
+        """
+        echo -e {wildcards.assembly_sample}”\t”$(samtools view -c {input} > {output})
+        """
+
+rule combine_read_counts_across_samples:
+    input:
+        expand(results + "READ_ABUNDANCE/03_metapop/{assembly_sample}_read_counts.tsv", assembly_sample=assembly_sample),
+    output:
+        results + "READ_ABUNDANCE/03_metapop/combined_read_counts.tsv",
+    conda:
+        "../envs/kneaddata.yml"
+    shell:
+        """
+        cat {input} > {output}
+        """
 
 # determine which viruses are present in the sample
+#TODO change virus dir/filtered to mgv fasta
 rule metapop:
     input:
         bam=expand(
             results
             +"READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam",
-            assembly_sample=assembly_sample,
-        ),
-        read_counts=results + "READ_ABUNDANCE/04_metapop_virus_abundance/read_counts.tsv",
-        viruses=results
-        +"06_VIRUS_QUALITY/02_quality_filter/quality_filtered_viruses.fna",
+            assembly_sample=assembly_sample),
+        read_counts=results + "READ_ABUNDANCE/03_metapop/combined_read_counts.tsv",
+        # viruses=resources+"mgv_db/contig_mgv.fna"
+        viruses=config["virus_db"]
+
+        # viruses=results
+        # +"06_VIRUS_QUALITY/02_quality_filter/quality_filtered_viruses.fna", #need
     output:
         results+"READ_ABUNDANCE/test",
     params:
         bam_dir=results + "READ_ABUNDANCE/01_bowtie2/bam_files/",
-        viruses_dir=results + "06_VIRUS_QUALITY/02_quality_filter/",
-        out_dir=results + "READ_ABUNDANCE/04_metapop_virus_abundance/",
+        viruses_dir=resources + "mgv_db/",
+        # viruses_dir=results + "06_VIRUS_QUALITY/02_quality_filter/",
+        out_dir=results + "READ_ABUNDANCE/03_metapop/",
         min_breadth=config["virus_abundance"]["min_breadth"],
         min_length=config["virus_abundance"]["min_length"],
         min_depth=config["virus_abundance"]["min_depth"],
@@ -275,11 +302,58 @@ rule metapop:
         --min_cov {params.min_breadth} \
         --minimum_bases_for_detection {params.min_length} \
         --min_dep {params.min_depth} \
-        --no_micro
+        --no_micro \
+        --threads {threads}
         """
 
 
 
 # -----------------------------------------------------
-# 05 InStrain
+# 04 InStrain
 # -----------------------------------------------------
+rule contig_from_virus_db:
+    input:
+        config["virus_db"]
+    output:
+        resources+"mgv_db/contig_mgv.fna"
+    conda:
+        "../envs/instrain.yml"
+    shell:
+        """
+        prodigal -i {input} \
+        -o {output}
+        """
+
+rule sort_bam:
+    input: 
+        bam=results+"READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam",
+    output:
+        sort = results+"READ_ABUNDANCE/01_bowtie2/sorted_bam_files/{assembly_sample}_sorted.bam",
+    conda:
+        "../envs/instrain.yml"
+    shell:
+        """
+        samtools sort {input.bam} -o {output.sort}
+        """
+
+rule inStrain_profile:
+    input:
+        # fasta=resources+"mgv_contig/contig_mgv.fna",
+        fasta=resources + "mgv_db/mgv_votu_reps.fasta",
+        bam=expand(results+"READ_ABUNDANCE/01_bowtie2/sorted_bam_files/{assembly_sample}_sorted.bam",
+        assembly_sample=assembly_sample),
+    output:
+        profile=results+"READ_ABUNDANCE/04_instrain/profile.IS",
+    params:
+        db=results+"READ_ABUNDANCE/04_instrain/profile/",
+        min_breadth=config["virus_abundance"]["min_breadth"],
+    conda:
+        "../envs/instrain.yml"
+    shell:
+        """
+        inStrain profile \
+        {input.bam} \
+        {input.fasta} \
+        -o {output.profile} \
+        --min_cov {params.min_breadth} 
+        """
