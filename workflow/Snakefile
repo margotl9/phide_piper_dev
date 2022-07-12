@@ -93,9 +93,9 @@ def get_final_output(wildcards):
     for b in brackens:
         final_output.append(b)
 
-    final_output.append(results+"READ_ABUNDANCE/test")
+    # final_output.append(results+"READ_ABUNDANCE/test")
 
-    # final_output.append(results+"READ_ABUNDANCE/04_instrain/profile.IS")
+    # final_output.append(results+"READ_ABUNDANCE/04_instrain_profile/profile.IS")
 
 
     return final_output
@@ -104,16 +104,6 @@ def get_final_output(wildcards):
 rule all:
     input:
         get_final_output,
-        # expand(results + "READ_ABUNDANCE/01_bowtie2/bam_files/{assembly_sample}.bam", 
-        # assembly_sample = assembly_sample),
-
-
-        # expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/{assembly_sample}_kraken2.kraken",
-        # assembly_sample = assembly_sample),
-        # expand(results+"READ_ABUNDANCE/02_kraken2_align_viruses/reports/{assembly_sample}_kraken2.kreport",
-        # assembly_sample = assembly_sample),
-
-        # expand(results + "READ_ABUNDANCE/03_bracken_align_viruses/{assembly_sample}_bracken_abundances.bracken",
-        # assembly_sample = assembly_sample)
+        results+"READ_ABUNDANCE/05_instrain_compare/compare.IS/output/compare.IS_comparisonsTable.tsv",
 
 
