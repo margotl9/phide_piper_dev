@@ -166,3 +166,20 @@ virus_abundance:
   kraken_threads: 10
   taxon_level: "F"
 
+read_abundance:
+  bowtie_build_extra_args: ""
+  bowtie_align_extra_args: ""
+  kraken_db: "/Users/margotlavitt/Sum22/phide_piper_dev/results/READ_ABUNDANCE/02_kraken2_bracken/mgv_kraken2db/"
+  kraken2_extra_args: ""
+  kraken_align_extra_args: ""
+  bracken_build_extra_args: ""
+  bracken_extra_args: ""
+  virus_dir: "/Users/margotlavitt/Sum22/phide_piper_dev/resources/mgv_db/"
+  metapop_extra_args: ""
+  inStrain_profile_extra_args: ""
+  inStrain_compare_extra_args: ""
+
+
+spacer_prediction:
+  in_dir: "/Users/margotlavitt/resources/bacteria_db/bacteria/"
+  CRISPRidentify_extra_args: ""

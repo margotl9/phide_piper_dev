@@ -29,7 +29,8 @@ report: "report/workflow.rst"
 # include: "rules/05_virus_clustering.smk"
 # include: "rules/06_virus_quality.smk"
 # include: "rules/07_virus_host.smk"
-include: "rules/read_abundances.smk"
+include: "rules/read_abundance.smk"
+include: "rules/spacer_prediction.smk"
 
 
 # include: "rules/08_virus_taxonomy.smk"
@@ -105,5 +106,6 @@ rule all:
     input:
         get_final_output,
         results+"READ_ABUNDANCE/05_instrain_compare/compare.IS/output/compare.IS_comparisonsTable.tsv",
+        results+"SPACER_PREDICTIONS/01_CRISPRidentify/"
 
 

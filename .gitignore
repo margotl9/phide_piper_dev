@@ -1,5 +1,6 @@
 *.snakemake/*
 dag.pdf
 *results*
-spacer_predictions.smk
+spacer_prediction.smk
 crispr_identify.yml
+spacer_prediction_gff_to_fasta.py.ipynb
